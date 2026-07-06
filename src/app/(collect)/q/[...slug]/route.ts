@@ -4,20 +4,22 @@ import { NextResponse } from 'next/server';
 import { POST } from '@/app/api/send/route';
 import type { Link } from '@/generated/prisma/client';
 import redis from '@/lib/redis';
+import { notFound } from '@/lib/response';
 import { findLink } from '@/queries/prisma';
 
-export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ slug: string[] }> }) {
   const { slug } = await params;
+  const slugString = slug.join('/');
 
   let link: Link;
 
   if (redis.enabled) {
     link = await redis.client.fetch(
-      `link:${slug}`,
+      `link:${slugString}`,
       async () => {
         return findLink({
           where: {
-            slug,
+            slugString,
             deletedAt: null,
           },
         });
@@ -26,18 +28,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     );
 
     if (!link) {
-      return NextResponse.json({ error: 'Link not found' }, { status: 404 });
+      return notFound();
     }
   } else {
     link = await findLink({
       where: {
-        slug,
+        slugString,
         deletedAt: null,
       },
     });
 
     if (!link) {
-      return NextResponse.json({ error: 'Link not found' }, { status: 404 });
+      return notFound();
     }
   }
 
@@ -58,5 +60,5 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 
   await POST(req);
 
-  return NextResponse.json({ link: link.url }, { status: 200 });
+  return NextResponse.redirect(link.url);
 }
