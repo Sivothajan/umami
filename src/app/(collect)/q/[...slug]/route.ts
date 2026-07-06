@@ -19,7 +19,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       async () => {
         return findLink({
           where: {
-            slugString,
+            slug: slugString,
             deletedAt: null,
           },
         });
@@ -33,7 +33,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   } else {
     link = await findLink({
       where: {
-        slugString,
+        slug: slugString,
         deletedAt: null,
       },
     });
